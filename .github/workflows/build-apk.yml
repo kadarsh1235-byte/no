@@ -13,7 +13,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: cd ProEditzLive && sh gradlew assembleDebug --no-daemon --stacktrace
+      - name: Build
+        shell: bash
+        run: cd ProEditzLive && sh gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee ../build.log
+      - name: Show errors
+        if: failure()
+        run: grep -E "^e: |What went wrong|FAILED|error:|Could not" -A4 build.log | head -60
       - uses: actions/upload-artifact@v4
         with:
           name: ProEditzLive-apk

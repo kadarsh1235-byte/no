@@ -1,7 +1,7 @@
 name: Build APK From Text Archive
 
 on:
-  workflow_dispatch: # Manual trigger button
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,8 +16,6 @@ jobs:
           echo "Found archive file: $TEXT_FILE"
           cp "$TEXT_FILE" project.zip
           unzip project.zip
-          
-          # Check the extracted structure to make sure everything is present
           ls -la
 
       - name: set up JDK 17
@@ -25,28 +23,25 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Locate gradlew and Grant Permission
+      - name: Generate Missing Gradle Wrapper
         run: |
-          # Find exactly where gradlew is hiding in the workspace
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "Error: gradlew file not found anywhere in the repository!"
-            exit 1
-          fi
-          echo "Found gradlew at: $GRADLEW_PATH"
-          chmod +x "$GRADLEW_PATH"
+          # Jis folder me settings.gradle ya build.gradle hai wahan ja kar gradle wrapper generate karega
+          PROJECT_DIR=$(find . -name "settings.gradle*" -exec dirname {} \; | head -n 1)
+          cd "$PROJECT_DIR"
+          echo "Project directory found at: $PROJECT_DIR"
           
-          # Save the directory path where gradlew lives for the next step
-          GRADLE_DIR=$(dirname "$GRADLEW_PATH")
-          echo "GRADLE_DIR=$GRADLE_DIR" >> $GITHUB_ENV
+          # Fresh gradle setup generate karna
+          gradle wrapper
+          chmod +x gradlew
+          
+          # Path ko agle step ke liye save karna
+          echo "GRADLE_DIR=$PROJECT_DIR" >> $GITHUB_ENV
 
       - name: Build with Gradle
         run: |
-          # Change directory to where gradlew is located and compile
           cd ${{ env.GRADLE_DIR }}
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

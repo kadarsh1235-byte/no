@@ -15,11 +15,31 @@ jobs:
           java-version: 17
       - name: Build
         shell: bash
-        run: cd ProEditzLive && sh gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee ../build.log
-      - name: Show errors
+        run: |
+          cd ProEditzLive
+          ok=0
+          for i in 1 2 3; do
+            if sh gradlew assembleDebug --no-daemon --console=plain > ../build.log 2>&1; then ok=1; break; fi
+            echo "Attempt $i failed, retrying..."
+            sleep 30
+          done
+          [ "$ok" = 1 ]
+      - name: Error summary
         if: failure()
-        run: grep -E "^e: |What went wrong|FAILED|error:|Could not" -A4 build.log | head -60
+        shell: bash
+        run: |
+          grep -E "^e: |What went wrong|Could not|Unresolved|Execution failed|AAPT|error:" -A2 build.log | sed 's#/home/runner/work/[^/]*/[^/]*/##' | head -30 > err.txt || true
+          [ -s err.txt ] || tail -25 build.log > err.txt
+          { echo '### Build errors'; echo '```'; cat err.txt; echo '```'; } >> $GITHUB_STEP_SUMMARY
+          msg=$(sed 's/%/%25/g' err.txt | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Build error::$msg"
       - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log
+          path: build.log
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: ProEditzLive-apk
           path: ProEditzLive/app/build/outputs/apk/debug/app-debug.apk

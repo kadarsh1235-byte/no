@@ -12,10 +12,13 @@ jobs:
 
       - name: Revert Text file back to Zip and Extract
         run: |
-          # .txt file ko wapas .zip banakar extract karne ka command
-          cp ProEditzLive.txt project.zip
+          # Kisi bhi naam ki .txt file ko dhoondh kar zip banayega
+          TEXT_FILE=$(ls *.txt | head -n 1)
+          echo "Found file: $TEXT_FILE"
+          cp "$TEXT_FILE" project.zip
           unzip project.zip
-          # Check karte hain ki folder extract hua ya nahi
+          
+          # Folder ka aslee naam dhoondhne ke liye list karein
           ls -la
 
       - name: set up JDK 17
@@ -27,17 +30,20 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: |
-          cd ProEditzLive
+          # Jis folder ke andar gradlew hai usme switch karega
+          DIR_NAME=$(ls -d */ | grep -v "github" | head -n 1)
+          cd "$DIR_NAME"
           chmod +x gradlew
 
       - name: Build with Gradle
         run: |
-          cd ProEditzLive
+          DIR_NAME=$(ls -d */ | grep -v "github" | head -n 1)
+          cd "$DIR_NAME"
           ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ProEditzLive-apk
-          path: ProEditzLive/app/build/outputs/apk/debug/app-debug.apk
+          path: "**/build/outputs/apk/debug/*.apk"
           

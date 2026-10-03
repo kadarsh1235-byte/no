@@ -1,14 +1,22 @@
-name: Build APK
+name: Build APK From Text Archive
 
 on:
-  workflow_dispatch: # This creates the "Run workflow" button you need
+  workflow_dispatch: # Isse manual "Run workflow" button aayega
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository code
         uses: actions/checkout@v4
+
+      - name: Revert Text file back to Zip and Extract
+        run: |
+          # .txt file ko wapas .zip banakar extract karne ka command
+          cp ProEditzLive.txt project.zip
+          unzip project.zip
+          # Check karte hain ki folder extract hua ya nahi
+          ls -la
 
       - name: set up JDK 17
         uses: actions/setup-java@v4
@@ -18,14 +26,18 @@ jobs:
           cache: gradle
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: |
+          cd ProEditzLive
+          chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew assembleDebug
+        run: |
+          cd ProEditzLive
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ProEditzLive-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: ProEditzLive/app/build/outputs/apk/debug/app-debug.apk
           
